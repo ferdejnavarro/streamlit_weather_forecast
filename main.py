@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.express as px
+from backend import get_data
 
 st.title('Weather Forecast')
 place = st.text_input('Location:')
@@ -11,15 +12,21 @@ option = st.selectbox('Select the type of info to analyze',
 st.subheader(f"{option} for the next {days} days in {place}")
 
 
-def get_data(days):
-    dates = ['2022-25-10', '2022-26-10', '2022-27-10']
-    temperatures = [25, 32, 28]
-    temperatures = [days * i for i in temperatures]
-    return dates, temperatures
+if place:
+    # Get temperature or weather data
+    filtered_data = get_data(place, days)
 
-d, t = get_data(days)
+    if option == 'Temperature':
+        temperatures = [dict['main']['temp'] for dict in filtered_data]
+        dates = [dict['dt_txt'] for dict in filtered_data]
+        # Create temperature plot
+        figure = px.line(x=dates, y=temperatures,
+                     labels={'x': 'Date', 'y': 'Temperature (°C)'})
+        st.plotly_chart(figure)
 
-figure = px.line(x=d, y=t,
-                 labels={'x': 'Date', 'y': 'Temperature (°C)'})
-
-st.plotly_chart(figure)
+    if option == 'Weather forecast':
+        images = {'Clear': 'images/clear.png', 'Clouds': 'images/cloud.png',
+                  'Rain': 'images/rain.png', 'Snow': 'images/snow.png'}
+        weather = [dict['weather'][0]['main'] for dict in filtered_data]
+        image_paths = [images[condition] for condition in weather]
+        st.image(image_paths, width=115)
